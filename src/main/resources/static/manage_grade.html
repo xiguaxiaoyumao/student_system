@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/img/icon.css">
+    <link rel="stylesheet" href="/img/easyui.css">
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/jquery.easyui.min.js"></script>
+    <script src="/js/easyui-lang-zh_CN.js"></script>
+    <title>学生成绩管理</title>
+    <style>
+        .cols {
+            width: auto;
+            height: auto;
+            float: left;
+            margin-left: 90px;
+        }
+    </style>
+</head>
+
+<body>
+<div id="tb">
+    <div class="cols">
+        <label for="stu-name">姓名:</label>
+        <input id="stu-name" class="easyui-textbox" data-options="iconCls:'icon-man'">
+    </div>
+    <div class="cols">
+        <label for="cls-type">班级:</label>
+        <input id="cls-type" class="easyui-textbox" data-options="iconCls:'icon-sum'">
+    </div>
+    <div class="cols">
+        <a id="search-btn" class="easyui-linkbutton" data-options="iconCls:'icon-search',plain:true">查询成绩</a>
+    </div>
+    <div class="cols">
+        <a id="add-btn" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true">添加成绩</a>
+    </div>
+    <div class="cols">
+        <a id="delete-btn" class="easyui-linkbutton" data-options="iconCls:'icon-no',plain:true">删除成绩</a>
+    </div>
+    <div class="cols">
+        <a id="update-btn" class="easyui-linkbutton" data-options="iconCls:'icon-edit',plain:true">修改成绩</a>
+    </div>
+</div>
+<table id="grade">
+    <thead>
+    <tr>
+        <th data-options="field:'student_id',width:195, align:'center'">学号</th>
+        <th data-options="field:'student_name', width:195, align:'center'">姓名</th>
+        <th data-options="field:'class_type', width:195, align:'center'">班级</th>
+        <th data-options="field:'chinese', width:195, align:'center'">语文</th>
+        <th data-options="field:'math', width:192, align:'center'">数学</th>
+        <th data-options="field:'english', width:192, align:'center'">英语</th>
+        <th data-options="field:'computer', width:193, align:'center'">计算机</th>
+    </tr>
+    </thead>
+</table>
+<div id="form-window">
+    <form id="grade-form">
+        <fieldset>
+            <legend>成绩信息</legend>
+            <table align="center">
+                <tr>
+                    <td>学号</td>
+                    <td><input id="student-id" name="student_id"></td>
+                </tr>
+                <tr>
+                    <td>姓名</td>
+                    <td><input id="student-name" name="student_name"></td>
+                </tr>
+                <tr>
+                    <td>班级</td>
+                    <td><input id="class-type" name="class_type"></td>
+                </tr>
+                <tr>
+                    <td>语文</td>
+                    <td><input id="chinese" name="chinese"></td>
+                </tr>
+                <tr>
+                    <td>数学</td>
+                    <td><input id="math" name="math"></td>
+                </tr>
+                <tr>
+                    <td>英语</td>
+                    <td><input id="english" name="english"></td>
+                </tr>
+                <tr>
+                    <td>计算机</td>
+                    <td><input id="computer" name="computer"></td>
+                </tr>
+            </table>
+            <a class="easyui-linkbutton" id="submit" style="margin-left: 170px">确认</a>
+        </fieldset>
+    </form>
+</div>
+<script>
+    $(function () {
+        $('#grade').datagrid({
+            title: '成绩信息',
+            iconCls: 'icon-ok',
+            width: 1360,
+            url: 'http://127.0.0.1:8080/get_grades',
+            toolbar: '#tb',
+            striped: true
+        });
+
+        $('#add-btn').click(function () {
+            $("#grade-form").form('clear');
+            $("#form-window").window('open');
+        });
+        /* 修改成绩 */
+        $('#update-btn').click(function () {
+            var rows = $("#grade").datagrid('getSelections');
+            //判断是否只选中一行
+            if (rows.length != 1) {
+                //不选或者多选
+                $.messager.alert("提示信息", "请选择一条数据", "warning");
+            } else {
+                var row = rows[0];
+                $("#grade-form").form('clear');
+                //进行表单回显操作
+                $("#grade-form").form('load', row);
+                //显示窗口
+                $("#form-window").window('open');
+            }
+        });
+        $('#form-window').window({
+            title: '成绩信息',
+            width: 450,
+            height: 280,
+            collapsible: false,
+            minimizable: false,
+            maximizable: false,
+            closable: true,
+            draggable: true,
+            resizable: false,
+            shadow: false,
+            closed: true
+        });
+
+
+        $('#submit').click(function () {
+            var grade = new Object();
+            grade.student_id = $('#student-id').val();
+            grade.student_name = $('#student-name').val();
+            grade.class_type = $('#class-type').val();
+            grade.chinese = $('#chinese').val();
+            grade.math = $('#math').val();
+            grade.english = $('#english').val();
+            grade.computer = $('#computer').val();
+            $.ajax({
+                url: 'http://127.0.0.1:8080/insert_or_update',
+                contentType: 'application/json',
+                type: 'post',
+                data: JSON.stringify(grade),
+                success: function (response) {
+                    if (response.code == '200') {
+                        $("#form-window").window('close');
+                        $('#grade').datagrid('reload');
+                    } else {
+                        $.messager.alert('提示', '操作失败');
+                    }
+                },
+                error: function () {
+                    $.messager.alert('提示', '请求失败');
+                }
+            });
+        });
+        $("#search-btn").click(function () {
+            var grade = new Object();
+            grade.student_name = $('#stu-name').val();
+            grade.class_type = $('#cls-type').val();
+            $.ajax({
+                url: 'http://127.0.0.1:8080/search',
+                contentType: 'application/json',
+                type: 'post',
+                data: JSON.stringify(grade),
+                success: function (response) {
+                    if (response.code = '200') {
+                        $('#grade').datagrid('loadData', response.object.grades);
+                    } else {
+
+                        $.messager.alert('提示', '操作失败');
+                    }
+                },
+                error: function () {
+                    $.messager.alert('提示', '请求失败');
+                }
+            });
+        });
+
+        $("#delete-btn").click(function () {
+            var rows = $("#grade").datagrid('getSelections');
+            if (rows.length != 1) {
+                $.messager.alert("提示信息", "请选择一行", "warning");
+                return;
+            }
+            var row = rows[0];
+            $.ajax({
+                type: 'post',
+                contentType: "application/json",
+                url: 'http://127.0.0.1:8080/delete_grade',
+                data: JSON.stringify(row),
+                success: function (response) {
+                    if (response.code == '200') {
+                        $('#grade').datagrid('reload');
+                    } else {
+                        $.messager.alert("提示信息", "删除失败", "warning");
+                    }
+                },
+                error: function () {
+                    $.messager.alert("提示信息", "请求失败", "warning");
+                }
+            });
+        });
+    });
+</script>
+</body>
+
+</html>

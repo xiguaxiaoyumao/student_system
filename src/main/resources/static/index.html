@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="img/icon.css">
+    <link rel="stylesheet" href="img/easyui.css">
+    <script src="js/jquery.min.js"></script>
+    <script src="js/jquery.easyui.min.js"></script>
+    <script src="js/easyui-lang-zh_CN.js"></script>
+    <title>学生成绩管理系统</title>
+    <style type="text/css">
+        .define-head {
+            font-family: "Microsoft Yahei";
+            background-color: #333333;
+            height: 58px;
+        }
+
+        .define-head .define-logo {
+            height: 100%;
+            width: 50%;
+            float: left;
+        }
+
+        .define-head .define-logo .title {
+            text-shadow: 3px 1px 6px #fff;
+            color: #75B8E7;
+            font-size: 20px;
+            height: 100%;
+            width: auto;
+            line-height: 58px;
+            padding-left: 160px;
+        }
+
+        .define-head .user {
+            text-shadow: 3px 1px 6px #fff;
+            height: 100%;
+            width: 5%;
+            float: right;
+        }
+
+        .user .userinfo {
+            color: #75B8E7;
+            line-height: 58px;
+            font-size: 14px;
+        }
+
+        .define-head .logout {
+            text-shadow: 3px 1px 6px #fff;
+            height: 100%;
+            width: 5%;
+            float: right;
+        }
+
+        .logout #logout-btn {
+            color: #75B8E7;
+            line-height: 58px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class="easyui-layout">
+<!-- 頂部 -->
+<div data-options="region:'north'" style="height:60px;">
+    <div class="define-head">
+        <div class="define-logo">
+            <div class="title">学生成绩管理系统</div>
+        </div>
+        <div class="logout">
+            <a id="logout-btn" href="javascript:logout();">退出</a>
+        </div>
+        <div class="user">
+            <div class="userinfo">用户:<span id="username"></span></div>
+        </div>
+    </div>
+</div>
+<!-- 底部 -->
+<div data-options="region:'south'" style="height:20px;">
+    <div class="define-bottom"></div>
+</div>
+<!-- 中部 -->
+<div data-options="region:'center',border:false">
+    <div style="width:100%;height:100%;position: relative;">
+        <div id="LeftMenuDiv" style="width: 160px;height:100%;display: inline-block;">
+            <div class="easyui-panel" title="系统菜单" style="width:100%;height:100%;"
+                 data-options="onOpen:onPanelOpen">
+                <div id="LeftMenu">
+                </div>
+            </div>
+        </div>
+
+        <div id="mainTab" class="easyui-tabs" data-options="fit:true,onSelect:onTabSelect"
+             style="display: inline-block; position: absolute;">
+            <div title="首页" data-options="closable:false" style="overflow:hidden;background-color:#fff;">
+                <iframe scrolling="auto" frameborder="0" src="" style="width:100%;height:100%"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 选项卡右键菜单 -->
+<div id="tab-menu" class="easyui-menu" style="width:150px;">
+    <div id="tab-menu-tabrefresh" data-options="iconCls:'icon-reload'">刷新</div>
+    <div class="menu-sep"></div>
+    <div id="tab-menu-tabcloaseall">关闭所有</div>
+    <div id="tab-menu-tabcloseother">关闭其他标签页</div>
+    <div id="tab-menu-tabcloseleft">关闭左边</div>
+    <div id="tab-menu-tabcloseright">关闭右边</div>
+    <div class="menu-sep"></div>
+    <div id="tab-menu-tabclose" data-options="iconCls:'icon-cancel'">关闭</div>
+    <div id="menu" class="easyui-menu" style="width:150px;margin-top:5px;"></div>
+</div>
+</body>
+<script type="text/javascript">
+    $(function () {
+        /* 获取用户信息 */
+        $.ajax({
+            url: 'http://127.0.0.1:8080/userinfo',
+            type: 'post',
+            error: function () {
+                $.messager.alert('提示', '用户信息获取失败!');
+            },
+            success: function (response) {
+                if (response.code === '200') {
+                    $('#username').text(response.object.user.username);
+                }
+            }
+        });
+        /* 获取菜单 */
+        var menu = null;
+        $.ajax({
+            url: 'http://127.0.0.1:8080/menu',
+            type: 'post',
+            async: false,
+            error: function () {
+                $.messager.alert('提示', '菜单列表获取失败!');
+            },
+            success: function (response) {
+                console.log(response);
+                /* 角色是学生显示学生的菜单 */
+                if (response.object.depart == "0") {
+                    menu = [{
+                        text: '学生',
+                        iconCls: 'icon-man',
+                        state: 'open',
+                        children: [{
+                            text: '成绩查询',
+                            iconCls: 'icon-search',
+                            url: 'http://127.0.0.1:8080/my_grade.html'
+                        }]
+                    }];
+                } else if (response.object.depart == "1") {
+                    menu = [{
+                        text: '老师',
+                        iconCls: 'icon-man',
+                        state: 'open',
+                        children: [{
+                            text: '成绩管理',
+                            iconCls: 'icon-search',
+                            url: 'http://127.0.0.1:8080/manage_grade.html'
+                        }]
+                    }];
+                } else if (response.object.depart == "2") {
+                    menu = [{
+                        text: '管理员',
+                        iconCls: 'icon-man',
+                        state: 'open',
+                        children: [{
+                            text: '成绩管理',
+                            iconCls: 'icon-search',
+                            url: 'http://127.0.0.1:8080/manage_grade.html'
+                        }, {
+                            text: '用户管理',
+                            iconCls: 'icon-man',
+                            url: 'http://127.0.0.1:8080/manage_user.html'
+                        }]
+                    }];
+                }
+            }
+        });
+        $('#LeftMenu').sidemenu({
+            data: menu,
+            onSelect: onSideMenuSelect,
+            border: false,
+            width: 158,
+            height: 'auto',
+        });
+    });
+
+    /* 退出登录 */
+    function logout() {
+        $.ajax({
+            url: 'http://127.0.0.1:8080/logout',
+            type: 'post',
+            error: function () {
+                $.messager.alert('提示', '退出失败!');
+            },
+            success: function (response) {
+                if (response.code == '200') {
+                    window.location.href = 'http://127.0.0.1:8080/login.html';
+                }
+            }
+        });
+    }
+
+    function onPanelOpen() {
+        var panel = $(this);
+        var _1e = panel.panel("header").children("div.panel-tool");
+        _1e.children("a.panel-tool-collapse").hide();
+        var _20 = "layout-button-left";
+        var t = _1e.children("a." + _20);
+        if (!t.length) {
+            t = $("<a href=\"javascript:;\"></a>").addClass(_20).appendTo(_1e);
+            t.bind("click", {dir: "left"}, function (e) {
+                if (e.target.className == "layout-button-right") {
+                    e.target.className = "layout-button-left";
+                    onWestExpand();
+                    panel.panel("setTitle", panel.titleTemp);
+                    panel.panel('resize', {
+                        width: 202
+                    });
+
+                    var leftMenuDiv = $('#LeftMenuDiv');
+                    leftMenuDiv.each(function () {
+                        this.style.width = '202px';
+                    });
+                } else {
+                    e.target.className = "layout-button-right"
+                    onWestCollapse();
+                    var opt = panel.panel('options');
+                    panel.titleTemp = opt.title;
+                    panel.panel("setTitle", "");
+                    panel.panel('resize', {
+                        width: 42
+                    });
+
+                    var leftMenuDiv = $('#LeftMenuDiv');
+                    leftMenuDiv.each(function () {
+                        this.style.width = '42px';
+                    });
+                }
+                return false;
+            });
+        }
+    }
+
+    function onTabSelect(title, index) {
+        var tabs = $('#mainTab');
+        var tab = tabs.tabs('getTab', index);
+        var menus = $('#LeftMenu');
+        if (menus.hasClass('sidemenu')) {
+            var opts = menus.sidemenu("options");
+            changeMenuSelect(menus, opts, tab[0].id);
+        }
+    }
+
+    function onWestCollapse() {
+        var opts = $('#LeftMenu').sidemenu('options');
+        if (opts.collapsed != 'collapse') {
+            $('#LeftMenu').sidemenu('collapse');
+            $('#LeftMenu').sidemenu('resize', {
+                width: 40
+            });
+        }
+    }
+
+    function onWestExpand() {
+        var opts = $('#LeftMenu').sidemenu('options');
+        if (opts.collapsed != 'expand') {
+            $('#LeftMenu').sidemenu('expand');
+            $('#LeftMenu').sidemenu('resize', {
+                width: 200
+            });
+        }
+    }
+
+    function onSideMenuSelect(item) {
+        if (!$('#mainTab').tabs('exists', item.text)) {
+            $('#mainTab').tabs('add', {
+                title: item.text,
+                content: '<iframe scrolling="no" frameborder="0"  src="' + item.url + '" style="width:100%;height:100%;"></iframe>',
+                closable: true,
+                icon: item.iconCls,
+                id: item.id
+            });
+        } else {
+            $('#mainTab').tabs('select', item.text);
+        }
+        addTabMenu();
+    }
+
+    function addTabMenu() {
+        /* 双击关闭TAB选项卡 */
+        $(".tabs-inner").dblclick(function () {
+            var subtitle = $(this).children(".tabs-closable").text();
+            $('#mainTab').tabs('close', subtitle);
+        });
+        /* 为选项卡绑定右键 */
+        $(".tabs-inner").bind('contextmenu', function (window) {
+            $('#tab-menu').menu('show', {
+                left: window.pageX,
+                top: window.pageY
+            });
+            var subtitle = $(this).children(".tabs-closable").text();
+            $('#tab-menu').data("currtab", subtitle);
+            $('#mainTab').tabs('select', subtitle);
+            return false;
+        });
+    }
+
+    $('#tab-menu-tabclose').click(function () {
+        $('#mainTab').tabs('close', $(this).parent().data('currtab'));
+    });
+
+    function changeMenuSelect(menus, opts, selectId) {
+        var menutrees = menus.find(".sidemenu-tree");
+        menutrees.each(function () {
+            var menuItem = $(this);
+            changeMenuStyle(menuItem, opts, selectId);
+        });
+
+        var tooltips = menus.find(".tooltip-f");
+        tooltips.each(function () {
+            var menuItem = $(this);
+            var tip = menuItem.tooltip("tip");
+            if (tip) {
+                tip.find(".sidemenu-tree").each(function () {
+                    changeMenuStyle($(this), opts, selectId);
+                });
+                menuItem.tooltip("reposition");
+            }
+        });
+    }
+
+    function changeMenuStyle(menuItem, opts, selectId) {
+        menuItem.find("div.tree-node-selected").removeClass("tree-node-selected");
+        var node = menuItem.tree("find", selectId);
+        if (node) {
+            $(node.target).addClass("tree-node-selected");
+            opts.selectedItemId = node.id;
+            menuItem.trigger("mouseleave.sidemenu");
+        }
+
+        changeMenuSelect(menuItem);
+    }
+</script>
+
+</html>
